@@ -1,6 +1,8 @@
 from PySide6.QtCore import QObject, Signal, Slot, Property
 from PySide6.QtQml import QmlElement
 from typing import List, Dict
+import json
+import os
 
 # 注册QML元素
 QmlElement = "TeamModel"
@@ -8,13 +10,16 @@ QmlElement = "TeamModel"
 class TeamModel(QObject):
     def __init__(self):
         super().__init__()
-        # 示例数据
-        self._teams = [
-            {"teamid": 1, "name": "第一组", "leader": "Tim Cook", "score": 85},
-            {"teamid": 2, "name": "第二组", "leader": "Tim Cook", "score": 92},
-            {"teamid": 3, "name": "第三组", "leader": "Tim Cook", "score": 78},
-            {"teamid": 4, "name": "第四组", "leader": "Tim Cook", "score": 96}
-        ]
+        # 检查并加载数据
+        data_file = "data/group.json"
+        if os.path.exists(data_file):
+            with open(data_file, 'r', encoding='utf-8') as f:
+                self._teams = json.load(f)
+        else:
+            os.makedirs(os.path.dirname(data_file), exist_ok=True)
+            self._teams = []
+            with open(data_file, 'w', encoding='utf-8') as f:
+                json.dump(self._teams, f, ensure_ascii=False, indent=2) 
         
     @Slot(result='QVariantList')
     def get_teams(self) -> List[Dict]:

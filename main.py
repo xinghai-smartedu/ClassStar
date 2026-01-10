@@ -9,7 +9,7 @@ if __name__ == '__main__':
     team_model = TeamModel()
     print(RinUI.__file__)
     app = QApplication(sys.argv)
-    gallery = RinUIWindow("pages/main.qml")
-    engine = gallery.engine
+    mainWindow = RinUIWindow("pages/main.qml")
+    engine = mainWindow.engine
     engine.rootContext().setContextProperty("teamModel", team_model)
     app.exec()
