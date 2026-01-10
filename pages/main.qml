@@ -11,83 +11,102 @@ Window {
     visible: true
     title: qsTr("班级星")
 
-    // 示例学生数据模型
-    ListModel {
-        id: studentModel
-        ListElement { name: "第一组"; leader: "Tim Cook"; score: 85; }
-        ListElement { name: "第二组"; leader: "Tim Cook"; score: 92; }
-        ListElement { name: "第三组"; leader: "Tim Cook"; score: 78; }
-        ListElement { name: "第四组"; leader: "Tim Cook"; score: 96; }
+    // 添加状态变量来跟踪是否已加载数据
+    property bool dataLoaded: false
+
+    function updateTeamsFromBackend() {
+        // 从Python后端获取数据
+        if (typeof teamModel !== 'undefined') {
+            var teams = teamModel.get_teams();
+            teamtModel.clear();
+            for (var i = 0; i < teams.length; i++) {
+                teamtModel.append(teams[i]);
+            }
+            dataLoaded = true; // 标记数据已加载
+        }
     }
- ListView {
-    width: 350
-    height: 300
-    model: studentModel
 
-    delegate: ListViewDelegate {
-        // width is typically bound to ListView.view.width by the delegate itself
-        // height is adaptive by default (contents.implicitHeight + 20)
+    ListModel {
+        id: teamtModel
+    }
 
-        leftArea: Text { // leftArea is a Text item
-            text: model.score // Main text from model
-            font.pixelSize: 12
-            color: Theme.currentTheme.colors.textSecondaryColor
-            elide: Text.ElideRight
-            Layout.fillWidth: true
-        }
-        middleArea: [ // middleArea takes a list of items for its ColumnLayout
-            Text {
-                text: model.name // Main text from model
-                font.bold: true
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            },
-            Text {
-                text: model.leader // Secondary text from model
-                font.pixelSize: 12
-                color: Theme.currentTheme.colors.textSecondaryColor
-                elide: Text.ElideRight
-                Layout.fillWidth: true
+    // 显示"请获取数据"或ListView
+    Item {
+        width: 350
+        height: 300
+        
+        // 显示数据列表
+        ListView {
+            id: listView
+            width: 350
+            height: 300
+            model: teamtModel
+            visible: dataLoaded
+            
+            delegate: ListViewDelegate {
+                leftArea: Text {
+                    text: model.score
+                    font.pixelSize: 12
+                    color: Theme.currentTheme.colors.textSecondaryColor
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+                middleArea: [
+                    Text {
+                        text: model.name
+                        font.bold: true
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    },
+                    Text {
+                        text: model.leader
+                        font.pixelSize: 12
+                        color: Theme.currentTheme.colors.textSecondaryColor
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+                ]
+
+                rightArea: ToolButton {
+                    icon.name: "ic_fluent_chevron_right_20_regular"
+                    flat: true
+                    size: 16
+                    Layout.alignment: Qt.AlignVCenter
+                    onClicked: {
+                        console.log("More options for:", model.name);
+                    }
+                }
+
+                onClicked: {
+                    console.log("Clicked on item:", model.teamid);
+                }
             }
-        ]
+        }
+        
+        // 显示"请获取数据"按钮
+        Text {
+            id: loadingText
+            text: qsTr("请点击下方刷新数据按钮获取数据")
+            anchors.centerIn: parent
+            visible: !dataLoaded  // 只有在未加载数据时才显示
+        }
+    }
 
-        rightArea: ToolButton { // Example: a ToolButton on the right
-            icon.name: "ic_fluent_chevron_right_20_regular"
-            flat: true
-            size: 16
-            Layout.alignment: Qt.AlignVCenter // Aligns button within the RowLayout of rightArea
+    // 底部按钮行
+    Row {
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.margins: 30
+        spacing: 4
+        Button {
+            highlighted: true
+            text: qsTr("刷新数据")
             onClicked: {
-                console.log("More options for:", model.titleText);
+                updateTeamsFromBackend();
             }
         }
-
-        onClicked: {
-            console.log("Clicked on item:", model.titleText);
-            // ListView.view.currentIndex is automatically updated by the delegate's default onClicked handler
+        Button {
+            text: qsTr("总数: " + (typeof teamModel !== 'undefined' ? teamModel.get_team_count() : 0))
         }
     }
 }
-        // 底部按钮行
-        Row {
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 4
-            Button {
-                highlighted: true
-                text: qsTr("Click me!")
-                onClicked: dialog.open()
-
-                Dialog {
-                    id: dialog
-                    modal: true
-                    title: qsTr("Dialog")
-                    Text {
-                        text: qsTr("This is a dialog.")
-                    }
-                    standardButtons: Dialog.Ok | Dialog.Cancel
-                }
-            }
-            Button {
-                text: qsTr("Button")
-            }
-        }
-    }
