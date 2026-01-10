@@ -19,10 +19,13 @@ from PySide6.QtQml import QmlElement
 from typing import List, Dict
 import json
 import os
+import pandas as pd  # 
 
-# 注册QML元素
-QmlElement = "TeamModel"
+# 定义QML元素
+QML_IMPORT_NAME = "models"
+QML_IMPORT_MAJOR_VERSION = 1
 
+@QmlElement
 class TeamModel(QObject):
     def __init__(self):
         super().__init__()
@@ -63,6 +66,40 @@ class TeamModel(QObject):
         """获取团队总数"""
         return len(self._teams)
     
+    @Slot(str, result=bool)
+    def import_from_excel(self, file_path: str) -> bool:
+        """从Excel文件导入团队数据"""
+        print("正在导入团队数据...")
+        print(file_path)
+        try:
+            # 读取Excel文件
+            df = pd.read_excel(file_path)
+            
+            # 清空现有数据
+            self._teams = []
+            
+            # 遍历Excel数据并添加到团队列表
+            for index, row in df.iterrows():
+                team_data = {
+                    "teamid": int(row.get('编号', index+1)),
+                    "name": str(row.get('名称', f'第{index+1}组')),
+                    "leader": str(row.get('队长', '暂无')),
+                    "score": int(row.get('分数', 0))
+                }
+                self._teams.append(team_data)
+            
+            # 保存到JSON文件
+            data_file = "data/group.json"
+            with open(data_file, 'w', encoding='utf-8') as f:
+                json.dump(self._teams, f, ensure_ascii=False, indent=2)
+                
+            print(f"成功从Excel导入 {len(self._teams)} 个团队")
+            return True
+        except Exception as e:
+            print(f"导入Excel失败: {str(e)}")
+            return False
+
+@QmlElement
 class StudentModel(QObject):
     def __init__(self):
         super().__init__()
@@ -79,9 +116,40 @@ class StudentModel(QObject):
     
     @Slot(result='QVariantList')
     def get_students_in_group(self, teamId) -> List[Dict]:
-        """获取所有学生数据"""
+        """获取指定团队的学生数据"""
         students = []
         for student in self._students:
             if student['teamid'] == teamId:
                 students.append(student)
         return students
+    
+    @Slot(str, result=bool)
+    def import_students_from_excel(self, file_path: str) -> bool:
+        """从Excel文件导入学生数据"""
+        try:
+            # 读取Excel文件
+            df = pd.read_excel(file_path, sheet_name='students')
+            
+            # 清空现有数据
+            self._students = []
+            
+            # 遍历Excel数据并添加到学生列表
+            for index, row in df.iterrows():
+                student_data = {
+                    "studentid": int(row.get('studentid', index+1)),
+                    "name": str(row.get('name', f'学生{index+1}')),
+                    "teamid": int(row.get('teamid', 1)),
+                    "score": int(row.get('score', 0))
+                }
+                self._students.append(student_data)
+            
+            # 保存到JSON文件
+            data_file = "data/student.json"
+            with open(data_file, 'w', encoding='utf-8') as f:
+                json.dump(self._students, f, ensure_ascii=False, indent=2)
+                
+            print(f"成功从Excel导入 {len(self._students)} 个学生")
+            return True
+        except Exception as e:
+            print(f"导入学生Excel失败: {str(e)}")
+            return False
