@@ -14,7 +14,7 @@ Student:
 ]
 """
 
-from PySide6.QtCore import QObject, Signal, Slot, Property
+from PySide6.QtCore import QObject, Slot
 from PySide6.QtQml import QmlElement
 from typing import List, Dict
 import json
@@ -35,7 +35,15 @@ class TeamModel(QObject):
             os.makedirs(os.path.dirname(data_file), exist_ok=True)
             self._teams = []
             with open(data_file, 'w', encoding='utf-8') as f:
-                json.dump(self._teams, f, ensure_ascii=False, indent=2) 
+                json.dump(self._teams, f, ensure_ascii=False, indent=2)
+            self._teams = [
+                {
+                    "teamid": 1,
+                    "name": "请先导入数据",
+                    "leader": "请先导入数据",
+                    "score": 0
+                }
+            ]
         
     @Slot(result='QVariantList')
     def get_teams(self) -> List[Dict]:
