@@ -1,3 +1,19 @@
+"""
+Example:
+Group:
+[
+    { teamid: 1, name: "团队1", leader: "张三", score: 27 }
+]
+
+Student:
+[
+    { studentid: 1, name: "张三", teamid: 1, score: 27 },
+    { studentid: 2, name: "李四", teamid: 1, score: 28 },
+    { studentid: 3, name: "王五", teamid: 1, score: 29 },
+    { studentid: 4, name: "赵六", teamid: 1, score: 30 },
+]
+"""
+
 from PySide6.QtCore import QObject, Signal, Slot, Property
 from PySide6.QtQml import QmlElement
 from typing import List, Dict
