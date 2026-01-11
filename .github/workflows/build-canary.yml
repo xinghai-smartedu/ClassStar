@@ -48,7 +48,6 @@ jobs:
         shell: bash
         run: |
           uv run pyinstaller --noconsole \
-            --icon "${{ matrix.icon }}" \
             --add-data "RinUI:RinUI" \
             --add-data "assets:assets" \
             --add-data "pages:pages" \
