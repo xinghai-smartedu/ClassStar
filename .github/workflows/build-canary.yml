@@ -49,7 +49,6 @@ jobs:
         run: |
           uv run pyinstaller --noconsole \
             --add-data "RinUI:RinUI" \
-            --add-data "assets:assets" \
             --add-data "pages:pages" \
             --paths=. \
             --contents-directory . \
