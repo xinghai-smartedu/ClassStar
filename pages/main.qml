@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import Qt.labs.platform as Labs
 import RinUI
 
-
 Window {
     width: 900
     height: 600
@@ -15,16 +14,45 @@ Window {
     // 添加状态变量来跟踪是否已加载数据
     property bool dataLoaded: false
     property string message: ""
+    property int currentTeamId: -1  // 当前选中的团队ID
+
+    // 创建一个学生模型
+    ListModel {
+        id: studentModel
+    }
 
     function updateTeamsFromBackend() {
         // 从Python后端获取数据
-        if (typeof teamModel !== 'undefined') {
-            var teams = teamModel.get_teams();
-            teamtModel.clear();
-            for (var i = 0; i < teams.length; i++) {
-                teamtModel.append(teams[i]);
+        var teams = teamModel.get_teams();
+        teamtModel.clear();
+        for (var i = 0; i < teams.length; i++) {
+            teamtModel.append(teams[i]);
+        }
+        dataLoaded = true; // 标记数据已加载
+    }
+
+    // 从后端获取指定团队的学生信息
+    function updateStudentsForTeam(teamId) {
+        console.log("Attempting to load students for teamId:", teamId);
+        try {
+            // 检查学生模型是否存在
+            if (typeof studentModelBackend !== 'undefined') {
+                console.log("studentModelBackend found, calling get_students_in_group");
+                var students = studentModelBackend.get_students_in_group(teamId);
+                console.log("Received students data:", students);
+                
+                studentModel.clear();
+                for (var i = 0; i < students.length; i++) {
+                    console.log("Adding student:", students[i]);
+                    studentModel.append(students[i]);
+                }
+                currentTeamId = teamId;  // 记录当前查看的团队ID
+                console.log("Updated student model with", studentModel.count, "students");
+            } else {
+                console.error("studentModelBackend is undefined!");
             }
-            dataLoaded = true; // 标记数据已加载
+        } catch (error) {
+            console.error("Error getting students for team:", error);
         }
     }
 
@@ -79,85 +107,172 @@ Window {
         }
     }
 
-    // 显示"请获取数据"或ListView
-    Item {
-        width: 350
-        height: 300
-        
-        // 显示数据列表
-        ListView {
-            id: listView
+    // 主要内容区域
+    SplitView {
+        anchors.fill: parent
+        orientation: Qt.Horizontal
+
+        // 团队列表区域
+        Item {
             width: 350
             height: 300
-            model: teamtModel
-            visible: dataLoaded
+            SplitView.minimumWidth: 250
+            SplitView.preferredWidth: 350
             
-            delegate: ListViewDelegate {
-                leftArea: Text {
-                    text: model.score
-                    font.pixelSize: 12
-                    color: Theme.currentTheme.colors.textSecondaryColor
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                }
-                middleArea: [
-                    Text {
-                        text: model.name
-                        font.bold: true
-                        elide: Text.ElideRight
-                        Layout.fillWidth: true
-                    },
-                    Text {
-                        text: model.leader
+            // 显示数据列表
+            ListView {
+                id: listView
+                anchors.fill: parent
+                model: teamtModel
+                visible: dataLoaded
+                
+                delegate: ListViewDelegate {
+                    leftArea: Text {
+                        text: model.score
                         font.pixelSize: 12
                         color: Theme.currentTheme.colors.textSecondaryColor
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
-                ]
+                    middleArea: [
+                        Text {
+                            text: model.name
+                            font.bold: true
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        },
+                        Text {
+                            text: model.leader
+                            font.pixelSize: 12
+                            color: Theme.currentTheme.colors.textSecondaryColor
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
+                    ]
 
-                rightArea: ToolButton {
-                    icon.name: "ic_fluent_chevron_right_20_regular"
-                    flat: true
-                    size: 16
-                    Layout.alignment: Qt.AlignVCenter
+                    rightArea: ToolButton {
+                        icon.name: "ic_fluent_chevron_right_20_regular"
+                        flat: true
+                        size: 16
+                        Layout.alignment: Qt.AlignVCenter
+                        onClicked: {
+                            console.log("More options for:", model.name);
+                        }
+                    }
+
                     onClicked: {
-                        console.log("More options for:", model.name);
+                        console.log("Clicked on item:", model.teamid);
+                        updateStudentsForTeam(model.teamid);  // 加载该团队的学生信息
                     }
                 }
+            }
+            
+            // 显示"请获取数据"按钮
+            Text {
+                id: loadingText
+                text: qsTr("请点击下方刷新数据按钮获取数据")
+                anchors.centerIn: parent
+                visible: !dataLoaded  // 只有在未加载数据时才显示
+            }
+            
+            // 成功消息
+            Dialog {
+                id: successMessage
+                modal: true
+                Text {
+                    text: qsTr(message)
+                }
+                standardButtons: Dialog.Ok | Dialog.Cancel
+            }
+            
+            // 错误消息
+            Dialog {
+                id: errorMessage
+                modal: true
+                Text {
+                    text: qsTr(message)
+                }
+                standardButtons: Dialog.Ok | Dialog.Cancel
+            }
+        }
 
-                onClicked: {
-                    console.log("Clicked on item:", model.teamid);
+        // 学生信息展示区域
+        Item {
+            id: studentInfoPanel
+            implicitWidth: 550
+            SplitView.minimumWidth: 300
+            
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 10
+                
+                Text {
+                    id: teamTitle
+                    text: currentTeamId !== -1 ? 
+                         ("第" + currentTeamId + "组") : 
+                         "请选择一个小组查看学生信息"
+                    font.pointSize: 32
+                    font.bold: true
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                }
+                
+                // 学生列表，使用SettingCard显示每个学生
+                ListView {
+                    id: studentListView
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    model: studentModel
+                    
+                    ScrollBar.vertical: ScrollBar {}
+                    
+                    delegate: SettingCard {
+                        Layout.fillWidth: true
+                        title: model.name
+                        description: "学号: " + model.studentid + " | 分数: " + model.score
+                        
+                        // 右侧可以放置一些操作按钮
+                        content: Row {
+                            spacing: 10
+                            
+                            Text {
+                                text: "分数: " + model.score
+                                font.bold: true
+                            }
+
+                            Button { 
+                                text: "+1"
+                                onClicked: {
+                                    studentModelBackend.addScore(model.studentid, 1);
+                                    updateStudentsForTeam(currentTeamId); // 更新后重新加载数据
+                                }
+                            }
+                            Button { 
+                                text: "-1"
+                                onClicked: {
+                                    studentModelBackend.addScore(model.studentid, -1);
+                                    updateStudentsForTeam(currentTeamId); // 更新后重新加载数据
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 如果没有选择团队，显示提示信息
+                Text {
+                    text: currentTeamId === -1 ? 
+                          "请在左侧选择一个团队以查看其学生信息" : 
+                          ""
+                    visible: currentTeamId === -1
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignCenter
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
+                    font.italic: true
+                    color: Theme.currentTheme.colors.textSecondaryColor
                 }
             }
-        }
-        
-        // 显示"请获取数据"按钮
-        Text {
-            id: loadingText
-            text: qsTr("请点击下方刷新数据按钮获取数据")
-            anchors.centerIn: parent
-            visible: !dataLoaded  // 只有在未加载数据时才显示
-        }
-        
-        // 成功消息
-        Dialog {
-            id: successMessage
-            modal: true
-            Text {
-                text: qsTr(message)
-            }
-            standardButtons: Dialog.Ok | Dialog.Cancel
-        }
-        
-        // 错误消息
-        Dialog {
-            id: errorMessage
-            modal: true
-            Text {
-                text: qsTr(message)
-            }
-            standardButtons: Dialog.Ok | Dialog.Cancel
         }
     }
 

@@ -114,7 +114,17 @@ class StudentModel(QObject):
             with open(data_file, 'w', encoding='utf-8') as f:
                 json.dump(self._students, f, ensure_ascii=False, indent=2)
     
-    @Slot(result='QVariantList')
+    @Slot(int, int)
+    def addScore(self, studentId, score):
+        """添加学生分数"""
+        for student in self._students:
+            if student['studentid'] == studentId:
+                student['score'] += score
+                with open("data/student.json", 'w', encoding='utf-8') as f:
+                    json.dump(self._students, f, ensure_ascii=False, indent=2)
+                break
+    
+    @Slot(int, result='QVariantList')
     def get_students_in_group(self, teamId) -> List[Dict]:
         """获取指定团队的学生数据"""
         students = []
@@ -144,8 +154,7 @@ class StudentModel(QObject):
                 self._students.append(student_data)
             
             # 保存到JSON文件
-            data_file = "data/student.json"
-            with open(data_file, 'w', encoding='utf-8') as f:
+            with open("data/student.json", 'w', encoding='utf-8') as f:
                 json.dump(self._students, f, ensure_ascii=False, indent=2)
                 
             print(f"成功从Excel导入 {len(self._students)} 个学生")
@@ -153,3 +162,4 @@ class StudentModel(QObject):
         except Exception as e:
             print(f"导入学生Excel失败: {str(e)}")
             return False
+        
