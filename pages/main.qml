@@ -210,7 +210,7 @@ Window {
                 Text {
                     id: teamTitle
                     text: currentTeamId !== -1 ? 
-                         ("第" + currentTeamId + "组") : 
+                         ("第" + currentTeamId + "组 / 共" +teamModel.get_team_count() + "组") : 
                          "请选择一个小组查看学生信息"
                     font.pointSize: 32
                     font.bold: true
@@ -218,13 +218,12 @@ Window {
                     wrapMode: Text.Wrap
                 }
                 
-                // 学生列表，使用SettingCard显示每个学生
+                // 学生列表
                 ListView {
                     id: studentListView
+                    model: studentModel
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    model: studentModel
-                    
                     ScrollBar.vertical: ScrollBar {}
                     
                     delegate: SettingCard {
@@ -294,9 +293,6 @@ Window {
             onClicked: {
                 excelFileDialog.open();
             }
-        }
-        Button {
-            text: qsTr("总数: " + (typeof teamModel !== 'undefined' ? teamModel.get_team_count() : 0))
         }
     }
 }
