@@ -84,7 +84,7 @@ class TeamModel(QObject):
                     "teamid": int(row.get('编号', index+1)),
                     "name": str(row.get('名称', f'第{index+1}组')),
                     "leader": str(row.get('队长', '暂无')),
-                    "score": int(row.get('分数', 0))
+                    "score": str(row.get('分数', 0)),
                 }
                 self._teams.append(team_data)
             
@@ -101,6 +101,7 @@ class TeamModel(QObject):
 
 @QmlElement
 class StudentModel(QObject):
+    _team = TeamModel()
     def __init__(self):
         super().__init__()
         # 检查并加载数据
@@ -122,8 +123,13 @@ class StudentModel(QObject):
                 student['score'] += score
                 with open("data/student.json", 'w', encoding='utf-8') as f:
                     json.dump(self._students, f, ensure_ascii=False, indent=2)
+                team_data = self._team.get_teams()
+                for team in team_data:
+                    if team['teamid'] == student['teamid']:
+                        team['score'] += score
+                with open("data/group.json", 'w', encoding='utf-8') as f:
+                    json.dump(team_data, f, ensure_ascii=False, indent=2)
                 break
-    
     @Slot(int, result='QVariantList')
     def get_students_in_group(self, teamId) -> List[Dict]:
         """获取指定团队的学生数据"""
@@ -162,4 +168,3 @@ class StudentModel(QObject):
         except Exception as e:
             print(f"导入学生Excel失败: {str(e)}")
             return False
-        
