@@ -127,12 +127,10 @@ Window {
                 visible: dataLoaded
                 
                 delegate: ListViewDelegate {
-                    leftArea: Text {
-                        text: model.score
-                        font.pixelSize: 12
-                        color: Theme.currentTheme.colors.textSecondaryColor
-                        elide: Text.ElideRight
-                        Layout.fillWidth: true
+                    leftArea: IconWidget {
+                        icon: "ic_fluent_people_20_regular"
+                        size: 22
+                        Layout.alignment: Qt.AlignVCenter // Aligns icon within the Row of leftArea
                     }
                     middleArea: [
                         Text {
@@ -142,7 +140,7 @@ Window {
                             Layout.fillWidth: true
                         },
                         Text {
-                            text: model.leader
+                            text: qsTr("队长：") + model.leader + qsTr(" | 总分：") + model.score
                             font.pixelSize: 12
                             color: Theme.currentTheme.colors.textSecondaryColor
                             elide: Text.ElideRight
@@ -227,6 +225,7 @@ Window {
                     ScrollBar.vertical: ScrollBar {}
                     
                     delegate: SettingCard {
+                        id: studentCard
                         Layout.fillWidth: true
                         title: model.name
                         description: "学号: " + model.studentid + " | 分数: " + model.score
